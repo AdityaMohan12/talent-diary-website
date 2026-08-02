@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Talent Diary">
+  <rect width="64" height="64" rx="14" fill="#1d18e6" />
+  <path
+    d="M20 24 a8 8 0 0 1 8 -8 h8 a8 8 0 0 1 8 8 v24 l-12 -7 l-12 7 z"
+    fill="#ffffff"
+  />
+</svg>
