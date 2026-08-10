@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/style/"],
       },
     ],
-    sitemap: "https://www.talentdiary.in/sitemap.xml",
-    host: "https://www.talentdiary.in",
+    sitemap: "https://talentdiary.in/sitemap.xml",
+    host: "https://talentdiary.in",
   };
 }

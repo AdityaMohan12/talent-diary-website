@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE = "https://www.talentdiary.in";
+const SITE = "https://talentdiary.in";
 
 /**
  * A sitemap is the fastest honest way to ask Google to recrawl the home page,

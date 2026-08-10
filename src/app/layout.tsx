@@ -25,12 +25,13 @@ const caveat = Caveat({
   display: "swap",
 });
 
-const SITE = "https://www.talentdiary.in";
+const SITE = "https://talentdiary.in";
 
 export const metadata: Metadata = {
-  // Google indexed the www host, so every generated URL and the canonical
-  // point there. Both hosts currently answer 200, which splits signals and is
-  // the likeliest reason the favicon crawl never settled.
+  // Apex, matching the 308 in vercel.json that sends www to apex. Google
+  // indexed the www URL, so its favicon fetch was landing on a redirect rather
+  // than the icon. Pointing the canonical at the host the server actually
+  // serves lets Google consolidate onto one place and read the icon directly.
   metadataBase: new URL(SITE),
   alternates: { canonical: "/" },
   title: "Talent Diary | Startup hiring done right",
