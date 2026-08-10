@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.talentdiary.in" }],
+      "destination": "https://talentdiary.in/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "www.talentdiary.in" }],
       "destination": "https://talentdiary.in/:path*",
