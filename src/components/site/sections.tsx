@@ -577,25 +577,25 @@ export function SiteFooter() {
         </div>
         <div className="foot-col">
           <h4>Company</h4>
-          <a className="u-underline" href="#why">Why us</a>
-          <a className="u-underline" href="#how">What to expect</a>
-          <a className="u-underline" href="#founders">Founders</a>
+          {/* Rooted at "/" rather than bare fragments. The footer renders on
+              every page, so href="#why" on /about pointed at an anchor that
+              does not exist there and simply did nothing. */}
+          <a className="u-underline" href="/#why">Why us</a>
+          <a className="u-underline" href="/#how">What to expect</a>
+          <a className="u-underline" href="/#founders">Founders</a>
+          {/* /diaries had no inbound link from anywhere on the site. It sat in
+              the sitemap as an orphan, which is the page type Google is least
+              likely to spend crawl budget on. */}
+          <a className="u-underline" href="/diaries">Talent Diaries</a>
         </div>
         <div className="foot-col">
           <h4>For candidates</h4>
+          <a className="u-underline" href="/jobs">Open roles</a>
           <a
             className="u-underline"
             href="mailto:contact@talentdiary.in?subject=Join%20the%20talent%20network"
           >
             Join the talent network
-          </a>
-          <a
-            className="u-underline"
-            href="https://www.linkedin.com"
-            target="_blank"
-            rel="noopener"
-          >
-            LinkedIn
           </a>
           <a className="u-underline" href="mailto:contact@talentdiary.in">
             Contact
