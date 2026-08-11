@@ -1,6 +1,9 @@
 "use client";
 
-import { motion, useReducedMotion, useInView, type Variants } from "framer-motion";
+// `m` instead of `motion`: the components are identical, but `m` draws its
+// animation features from the LazyMotion provider in providers.tsx rather than
+// bundling framer's full runtime into every page.
+import { m, useReducedMotion, useInView, type Variants } from "framer-motion";
 import { useRef } from "react";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -23,7 +26,7 @@ export function Reveal({
   style?: React.CSSProperties;
 }) {
   const reduce = useReducedMotion();
-  const MotionTag = motion[as as "div"];
+  const MotionTag = m[as as "div"];
   return (
     <MotionTag
       className={className}
@@ -59,7 +62,7 @@ export function Stagger({
   as?: Tag;
   style?: React.CSSProperties;
 }) {
-  const MotionTag = motion[as as "div"];
+  const MotionTag = m[as as "div"];
   return (
     <MotionTag
       className={className}
@@ -92,7 +95,7 @@ export function RevealItem({
   style?: React.CSSProperties;
 }) {
   const reduce = useReducedMotion();
-  const MotionTag = motion[as as "div"];
+  const MotionTag = m[as as "div"];
   const v: Variants = reduce
     ? {
         hidden: { opacity: 0 },

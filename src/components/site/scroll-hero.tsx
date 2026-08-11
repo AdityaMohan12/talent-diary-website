@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
 import { ShaderField, type ShaderDrive } from "@/components/site/shader-field";
 
@@ -30,6 +30,11 @@ export function ScrollHero({
   floodInk?: boolean;
 }) {
   const reduce = useReducedMotion();
+  // The WebGL field mounts after the page has settled (or on first input).
+  // Compiling shaders during initial load taxes the main thread exactly when
+  // the phone is trying to paint the headline, and the field is ambient
+  // decoration nobody misses in the first second.
+  const [fx, setFx] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -45,13 +50,28 @@ export function ScrollHero({
   });
 
   useEffect(() => {
+    // typeof, not `in`: Safari still lacks requestIdleCallback, but lib.dom
+    // declares it unconditionally, so an `in` check narrows window to never.
+    const hasRic = typeof window.requestIdleCallback === "function";
+    const id = hasRic
+      ? window.requestIdleCallback(() => setFx(true), { timeout: 2500 })
+      : window.setTimeout(() => setFx(true), 2500);
+    return () => {
+      if (hasRic) window.cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const images: HTMLImageElement[] = [];
+    const images: (HTMLImageElement | undefined)[] = new Array(FRAME_COUNT);
+    const loaded: boolean[] = new Array(FRAME_COUNT).fill(false);
     let current = -1;
     let raf = 0;
+    let disposed = false;
 
     const draw = (idx: number): boolean => {
       const img = images[idx];
@@ -75,17 +95,86 @@ export function ScrollHero({
       return true;
     };
 
-    for (let i = 0; i < FRAME_COUNT; i++) {
-      const im = new Image();
-      im.src = frameSrc(i + 1);
-      if (i === 0) {
-        im.onload = () => {
-          if (draw(0)) current = 0;
+    /*
+     * Frame loading, rebuilt for the phone it actually runs on.
+     *
+     * The first version fetched all 121 frames (5.9MB) the moment the page
+     * mounted and let the browser decode each one on the main thread as it was
+     * drawn. On a mid-range phone that is ~30 seconds of main-thread blocking
+     * layered over the initial paint. Now:
+     *
+     *  - frame 1 loads immediately (it is the visible poster and the LCP)
+     *  - the rest wait for first input or idle, whichever comes first
+     *  - they arrive coarse-to-fine (every 15th, every 5th, then all), so a
+     *    user who scrolls early scrubs a sparse-but-complete animation that
+     *    sharpens as it fills in; draw() falls back to the nearest loaded frame
+     *  - decode() runs off the main thread, four frames in flight at a time
+     *  - reduced-motion loads exactly one frame instead of all 121
+     */
+    const loadFrame = (i: number): Promise<void> =>
+      new Promise((resolve) => {
+        if (images[i]) return resolve();
+        const im = new Image();
+        im.decoding = "async";
+        images[i] = im;
+        im.src = frameSrc(i + 1);
+        const done = () => {
+          loaded[i] = true;
+          resolve();
         };
+        im.decode().then(done).catch(() => {
+          // decode() can reject on transient pressure; the pixels may still be
+          // fine. Fall back to load events rather than dropping the frame.
+          if (im.complete && im.naturalWidth > 0) done();
+          else {
+            im.onload = done;
+            im.onerror = () => resolve();
+          }
+        });
+      });
+
+    const nearestLoaded = (idx: number): number => {
+      if (loaded[idx]) return idx;
+      for (let d = 1; d < FRAME_COUNT; d++) {
+        if (idx - d >= 0 && loaded[idx - d]) return idx - d;
+        if (idx + d < FRAME_COUNT && loaded[idx + d]) return idx + d;
       }
-      images.push(im);
+      return -1;
+    };
+
+    // Coarse-to-fine order: a 9-frame skeleton of the whole animation first,
+    // then 25, then everything. Scrubbing works end to end almost immediately.
+    const order: number[] = [];
+    {
+      const seen = new Set<number>();
+      for (const step of [15, 5, 1]) {
+        for (let i = 0; i < FRAME_COUNT; i += step) {
+          if (!seen.has(i)) {
+            seen.add(i);
+            order.push(i);
+          }
+        }
+      }
+      if (!seen.has(FRAME_COUNT - 1)) order.push(FRAME_COUNT - 1);
     }
-    if (draw(0)) current = 0;
+
+    let bulkStarted = false;
+    const startBulk = () => {
+      if (bulkStarted || disposed) return;
+      bulkStarted = true;
+      let cursor = 0;
+      const next = (): void => {
+        if (disposed) return;
+        const i = order[cursor++];
+        if (i === undefined) return;
+        void loadFrame(i).then(next);
+      };
+      for (let k = 0; k < 4; k++) next();
+    };
+
+    void loadFrame(0).then(() => {
+      if (!disposed && draw(0)) current = 0;
+    });
 
     const onResize = () => draw(current < 0 ? 0 : current);
     window.addEventListener("resize", onResize);
@@ -93,10 +182,22 @@ export function ScrollHero({
     if (reduce) {
       const t = setTimeout(() => draw(0), 80);
       return () => {
+        disposed = true;
         clearTimeout(t);
         window.removeEventListener("resize", onResize);
       };
     }
+
+    // First input starts the bulk load instantly; a settled main thread starts
+    // it anyway so frames are ready before an idle reader begins to scroll.
+    const inputOpts = { once: true, passive: true } as const;
+    window.addEventListener("scroll", startBulk, inputOpts);
+    window.addEventListener("pointerdown", startBulk, inputOpts);
+    window.addEventListener("touchstart", startBulk, inputOpts);
+    const hasRic = typeof window.requestIdleCallback === "function";
+    const idleId = hasRic
+      ? window.requestIdleCallback(startBulk, { timeout: 3500 })
+      : window.setTimeout(startBulk, 3500);
 
     // mouse parallax target (-1..1), smoothed each frame
     const target = { x: 0, y: 0 };
@@ -134,9 +235,13 @@ export function ScrollHero({
         // The diary finishes its full open + page-burst by fp ~0.78, then HOLDS
         // the last frame while the ink flood + fade take over. With the shorter
         // (quicker) track this stops the burst getting cut off mid-animation.
-        const idx = Math.round(clamp(fp / 0.78) * (FRAME_COUNT - 1));
-        if (idx !== current) {
-          if (draw(idx)) current = idx; // retry next frame if not loaded yet
+        const want = Math.round(clamp(fp / 0.78) * (FRAME_COUNT - 1));
+        // Draw the nearest frame that has actually arrived. While the
+        // coarse-to-fine load is still filling in, this converges toward the
+        // exact frame on its own as neighbours land.
+        const idx = nearestLoaded(want);
+        if (idx >= 0 && idx !== current) {
+          if (draw(idx)) current = idx;
         }
 
         // drive the WebGL field: ambient light swells as the book opens and
@@ -180,14 +285,43 @@ export function ScrollHero({
           overlayRef.current.style.pointerEvents = o < 0.2 ? "none" : "auto";
         }
       }
+      if (running) raf = requestAnimationFrame(tick);
+    };
+
+    // The loop only runs while the hero is anywhere near the viewport. A
+    // reader three sections down was still paying for sixty getBoundingClientRect
+    // calls a second on an element they could not see.
+    let running = false;
+    const startLoop = () => {
+      if (running) return;
+      running = true;
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    const stopLoop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) startLoop();
+        else stopLoop();
+      },
+      { rootMargin: "160px 0px" },
+    );
+    if (containerRef.current) io.observe(containerRef.current);
+    else startLoop();
 
     return () => {
-      cancelAnimationFrame(raf);
+      disposed = true;
+      stopLoop();
+      io.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouse);
+      window.removeEventListener("scroll", startBulk);
+      window.removeEventListener("pointerdown", startBulk);
+      window.removeEventListener("touchstart", startBulk);
+      if (hasRic) window.cancelIdleCallback(idleId);
+      else clearTimeout(idleId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduce]);
@@ -203,7 +337,7 @@ export function ScrollHero({
           <div className="sh-glow__inner" />
         </div>
         <canvas ref={canvasRef} className="sh-canvas" aria-hidden />
-        <ShaderField className="sh-shader" drive={driveRef} intensity={0.85} />
+        {fx && <ShaderField className="sh-shader" drive={driveRef} intensity={0.85} />}
         <div
           ref={washRef}
           className="sh-wash"
