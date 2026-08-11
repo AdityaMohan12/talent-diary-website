@@ -188,16 +188,21 @@ export function ScrollHero({
       };
     }
 
-    // First input starts the bulk load instantly; a settled main thread starts
-    // it anyway so frames are ready before an idle reader begins to scroll.
+    // The bulk load starts on INTENT, never on a timer. An idle-timer version
+    // of this loaded all 121 frames during PageSpeed's trace, and on a
+    // throttled phone every JPEG decode lands a ~200ms task on the main
+    // thread: 28 seconds of Total Blocking Time from decode alone, in the
+    // Lighthouse "Other" bucket. A visitor who never touches the page now
+    // costs one frame, not 5.9MB; the first twitch of scroll, touch, wheel or
+    // mouse starts the pipeline, and the coarse-to-fine order plus the
+    // nearest-loaded fallback cover the second it takes to catch up.
     const inputOpts = { once: true, passive: true } as const;
     window.addEventListener("scroll", startBulk, inputOpts);
     window.addEventListener("pointerdown", startBulk, inputOpts);
     window.addEventListener("touchstart", startBulk, inputOpts);
-    const hasRic = typeof window.requestIdleCallback === "function";
-    const idleId = hasRic
-      ? window.requestIdleCallback(startBulk, { timeout: 3500 })
-      : window.setTimeout(startBulk, 3500);
+    window.addEventListener("wheel", startBulk, inputOpts);
+    window.addEventListener("keydown", startBulk, inputOpts);
+    window.addEventListener("mousemove", startBulk, inputOpts);
 
     // mouse parallax target (-1..1), smoothed each frame
     const target = { x: 0, y: 0 };
@@ -320,8 +325,9 @@ export function ScrollHero({
       window.removeEventListener("scroll", startBulk);
       window.removeEventListener("pointerdown", startBulk);
       window.removeEventListener("touchstart", startBulk);
-      if (hasRic) window.cancelIdleCallback(idleId);
-      else clearTimeout(idleId);
+      window.removeEventListener("wheel", startBulk);
+      window.removeEventListener("keydown", startBulk);
+      window.removeEventListener("mousemove", startBulk);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduce]);
