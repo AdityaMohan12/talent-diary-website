@@ -597,6 +597,17 @@ export function SiteFooter() {
           >
             Join the talent network
           </a>
+          {/* The company page, not linkedin.com. The querystring on the URL as
+              supplied was referral tracking from the Google result it was
+              copied out of, so it is dropped here. */}
+          <a
+            className="u-underline"
+            href="https://www.linkedin.com/company/talent-diary"
+            target="_blank"
+            rel="me noopener"
+          >
+            LinkedIn
+          </a>
           <a className="u-underline" href="mailto:contact@talentdiary.in">
             Contact
           </a>
