@@ -22,6 +22,7 @@ import { TalentForm } from "@/components/site/forms/talent-form";
 import { ROLES, COMPANIES } from "@/lib/roles";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/jobs" },
   title: "Open roles | Talent Diary",
   description:
     "Live roles at the startups we partner with. Open one for the full JD, then apply in a couple of minutes.",

@@ -18,6 +18,7 @@ import {
 } from "@/components/site/scraps";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/contact" },
   title: "Get in touch | Talent Diary",
   description:
     "Founders, tell us the role and we come back fast. Talent, join our network for startup roles built around what you do next.",

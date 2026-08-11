@@ -5,6 +5,7 @@ import { DiariesHub } from "@/components/site/diaries/diaries-hub";
 import { SiteFooter } from "@/components/site/sections";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/diaries" },
   title: "Talent Diaries | Notes from startup hiring",
   description:
     "Field notes from inside startup hiring. Founder notes, hiring diaries, candidate stories and startup lessons, written by operators.",

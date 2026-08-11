@@ -22,6 +22,7 @@ import { CALENDLY_URL } from "@/lib/site";
 import { FounderForm } from "@/components/site/forms/founder-form";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/about" },
   title: "Fractional Recruitment | Talent Diary",
   description:
     "Talent Diary is a startup-specialist recruitment partner. We embed with your team and own hiring end to end, so founders stay focused on the product.",

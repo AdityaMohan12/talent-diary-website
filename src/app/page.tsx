@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Nav } from "@/components/site/nav";
 import { DiaryHero } from "@/components/site/diary-hero";
 import {
@@ -9,6 +10,12 @@ import {
   ClosingCTA,
   SiteFooter,
 } from "@/components/site/sections";
+
+// The home page keeps its canonical, now declared here rather than inherited
+// from the root layout, where it was silently applied to every other route too.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   return (

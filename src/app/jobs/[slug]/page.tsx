@@ -27,6 +27,10 @@ export async function generateMetadata({
   const role = getRole(slug);
   if (!role) return { title: "Role not found | Talent Diary" };
   return {
+    // Each role is its own canonical. These are the pages carrying the
+    // searchable content on a recruiting site, so declaring them duplicates of
+    // the home page cost every one of them its chance at being indexed.
+    alternates: { canonical: `/jobs/${role.slug}` },
     title: `${role.title} | Talent Diary`,
     description: role.summary,
   };

@@ -17,6 +17,7 @@ import { CALENDLY_URL, COACHING_CALENDLY_URL } from "@/lib/site";
 import { CoachingForm } from "@/components/site/forms/coaching-form";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/coaching" },
   title: "Career Coaching | Talent Diary",
   description:
     "Stand out in the startup market. LinkedIn optimization, resume writing, and 1-on-1 coaching from the recruiters who know what founders stop scrolling for.",

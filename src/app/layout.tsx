@@ -33,7 +33,12 @@ export const metadata: Metadata = {
   // than the icon. Pointing the canonical at the host the server actually
   // serves lets Google consolidate onto one place and read the icon directly.
   metadataBase: new URL(SITE),
-  alternates: { canonical: "/" },
+  // Deliberately NO `alternates.canonical` here. Next inherits root metadata
+  // into every route that does not override it, so a canonical set at the root
+  // made every page on the site declare the home page as its canonical. Google
+  // obeyed: it discovered the job pages from the sitemap, read the tag, treated
+  // each one as a duplicate of the home page and indexed none of them. The
+  // canonical is per page, and it lives on the page.
   title: "Talent Diary | Startup hiring done right",
   description:
     "Talent Diary fills niche tech and non-tech roles for high-growth startups with a deeply vetted shortlist in under 30 days. Built by operators who hired at Unacademy, Interview Kickstart, 91Springboard and Awign.",
